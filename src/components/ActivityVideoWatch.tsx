@@ -74,6 +74,7 @@ export const ActivityVideoWatch: React.FC<ActivityVideoWatchProps> = ({
   const [builtInPlaying, setBuiltInPlaying] = useState<boolean>(false);
   const [builtInElapsedSec, setBuiltInElapsedSec] = useState<number>(0);
   const [builtInMuted, setBuiltInMuted] = useState<boolean>(false);
+  const [builtInVolume, setBuiltInVolume] = useState<number>(85);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerContainerRef = useRef<HTMLDivElement | null>(null);
@@ -94,6 +95,13 @@ export const ActivityVideoWatch: React.FC<ActivityVideoWatchProps> = ({
   const activeSourceUrl = uploadedBlobUrl || teacherVideoUrl.trim();
   const embedUrl = activeSourceUrl && !uploadedBlobUrl ? getYouTubeEmbedUrl(activeSourceUrl) : null;
   const isDirectVideo = Boolean(activeSourceUrl && !embedUrl);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.volume = Math.max(0, Math.min(1, volume / 100));
+    el.muted = isMuted || volume === 0;
+  }, [activeSourceUrl, volume, isMuted]);
 
   const handleApplyUrl = (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,28 +164,29 @@ export const ActivityVideoWatch: React.FC<ActivityVideoWatchProps> = ({
   };
 
   const handlePlay = () => {
-    if (!videoRef.current) return;
-    videoRef.current.play().catch(() => {});
-    setIsPlaying(true);
+    const el = videoRef.current;
+    if (!el) return;
+    el.volume = Math.max(0, Math.min(1, volume / 100));
+    el.muted = isMuted || volume === 0;
+    el.play().catch(() => setIsPlaying(false));
   };
 
   const handlePause = () => {
     if (!videoRef.current) return;
     videoRef.current.pause();
-    setIsPlaying(false);
   };
 
   const handleReplay = () => {
     if (embedUrl) {
       setIframeKey((prev) => prev + 1);
-      playClickPop();
       return;
     }
-    if (!videoRef.current) return;
-    videoRef.current.currentTime = 0;
-    videoRef.current.play().catch(() => {});
-    setIsPlaying(true);
-    playClickPop();
+    const el = videoRef.current;
+    if (!el) return;
+    el.currentTime = 0;
+    el.volume = Math.max(0, Math.min(1, volume / 100));
+    el.muted = isMuted || volume === 0;
+    el.play().catch(() => setIsPlaying(false));
   };
 
   const handleVolumeChange = (nextVal: number) => {
@@ -255,6 +264,8 @@ export const ActivityVideoWatch: React.FC<ActivityVideoWatchProps> = ({
               setElapsedSec={setBuiltInElapsedSec}
               isMuted={builtInMuted}
               onToggleMute={() => setBuiltInMuted((prev) => !prev)}
+              volume={builtInVolume}
+              onVolumeChange={setBuiltInVolume}
               enableCheckpoints={false}
               onVideoEnded={() => {
                 onCompleteMission();
@@ -278,9 +289,20 @@ export const ActivityVideoWatch: React.FC<ActivityVideoWatchProps> = ({
               ref={videoRef}
               src={activeSourceUrl}
               poster={HERO_MEDIA.videoPosterImage}
+              playsInline
+              preload="metadata"
               className="w-full h-full object-contain bg-slate-950"
+              onLoadedMetadata={(e) => {
+                e.currentTarget.volume = Math.max(0, Math.min(1, volume / 100));
+                e.currentTarget.muted = isMuted || volume === 0;
+              }}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
+              onVolumeChange={(e) => {
+                const el = e.currentTarget;
+                setIsMuted(el.muted || el.volume === 0);
+                setVolume(Math.round(el.volume * 100));
+              }}
               onEnded={() => {
                 setIsPlaying(false);
                 onCompleteMission();
@@ -307,7 +329,11 @@ export const ActivityVideoWatch: React.FC<ActivityVideoWatchProps> = ({
                   }`}
                 >
                   <Play className="w-4 h-4" />
-                  <span>Main</span>
+                  <span>
+                    {videoRef.current && videoRef.current.currentTime > 0 && !videoRef.current.ended
+                      ? 'Sambung'
+                      : 'Main'}
+                  </span>
                 </button>
                 <button
                   type="button"

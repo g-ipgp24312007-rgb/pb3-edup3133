@@ -124,6 +124,7 @@ export const Phase2Hub: React.FC<Phase2HubProps> = ({
   const [builtInPlaying, setBuiltInPlaying] = useState<boolean>(false);
   const [builtInElapsedSec, setBuiltInElapsedSec] = useState<number>(0);
   const [builtInMuted, setBuiltInMuted] = useState<boolean>(false);
+  const [builtInVolume, setBuiltInVolume] = useState<number>(85);
   const [builtInTriggeredCheckpoints, setBuiltInTriggeredCheckpoints] = useState<string[]>([]);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -160,6 +161,13 @@ export const Phase2Hub: React.FC<Phase2HubProps> = ({
   const activeVideoSrc = uploadedBlobUrl || progress.videoUrl.trim();
   const embedSrc = activeVideoSrc && !uploadedBlobUrl ? getYouTubeOrVimeoEmbed(activeVideoSrc) : null;
   const isDirectVideo = Boolean(activeVideoSrc && !embedSrc);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.volume = Math.max(0, Math.min(1, volume / 100));
+    el.muted = isMuted || volume === 0;
+  }, [activeVideoSrc, volume, isMuted]);
 
   const handleSelectPart = (part: Phase2Tab) => {
     playClickPop();
@@ -286,8 +294,9 @@ export const Phase2Hub: React.FC<Phase2HubProps> = ({
     setCheckpointSelectedOpt('');
     setCheckpointResult(null);
     if (isDirectVideo && videoRef.current) {
-      videoRef.current.play().catch(() => {});
-      setIsPlaying(true);
+      videoRef.current.volume = Math.max(0, Math.min(1, volume / 100));
+      videoRef.current.muted = isMuted || volume === 0;
+      videoRef.current.play().catch(() => setIsPlaying(false));
     } else if (!activeVideoSrc) {
       if (currentCp?.id === 'cp-5' && builtInElapsedSec >= 41) {
         setBuiltInElapsedSec(BUILTIN_VIDEO_DURATION);
@@ -296,7 +305,6 @@ export const Phase2Hub: React.FC<Phase2HubProps> = ({
         setBuiltInPlaying(true);
       }
     }
-    playClickPop();
   };
 
   // Part D: Real Gemini Chatbot Handler
@@ -600,6 +608,8 @@ export const Phase2Hub: React.FC<Phase2HubProps> = ({
                     setElapsedSec={setBuiltInElapsedSec}
                     isMuted={builtInMuted}
                     onToggleMute={() => setBuiltInMuted((prev) => !prev)}
+                    volume={builtInVolume}
+                    onVolumeChange={setBuiltInVolume}
                     hasActiveCheckpoint={Boolean(activeCheckpoint)}
                     onTriggerCheckpoint={(cp) => {
                       setActiveCheckpoint(cp);
@@ -625,9 +635,21 @@ export const Phase2Hub: React.FC<Phase2HubProps> = ({
                     ref={videoRef}
                     src={activeVideoSrc}
                     poster={HERO_MEDIA.videoPosterImage}
+                    playsInline
+                    preload="metadata"
                     className="w-full h-full object-contain bg-slate-950"
+                    onLoadedMetadata={(e) => {
+                      e.currentTarget.volume = Math.max(0, Math.min(1, volume / 100));
+                      e.currentTarget.muted = isMuted || volume === 0;
+                    }}
                     onPlay={() => setIsPlaying(true)}
                     onPause={() => setIsPlaying(false)}
+                    onEnded={() => setIsPlaying(false)}
+                    onVolumeChange={(e) => {
+                      const el = e.currentTarget;
+                      setIsMuted(el.muted || el.volume === 0);
+                      setVolume(Math.round(el.volume * 100));
+                    }}
                     onTimeUpdate={handleVideoTimeUpdate}
                   />
                 )}
@@ -709,20 +731,26 @@ export const Phase2Hub: React.FC<Phase2HubProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          videoRef.current?.play().catch(() => {});
-                          setIsPlaying(true);
+                          const el = videoRef.current;
+                          if (!el) return;
+                          el.volume = Math.max(0, Math.min(1, volume / 100));
+                          el.muted = isMuted || volume === 0;
+                          el.play().catch(() => setIsPlaying(false));
                         }}
                         disabled={isPlaying}
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-600 disabled:bg-slate-200 disabled:text-slate-500 text-white text-xs font-bold cursor-pointer min-h-[40px]"
                       >
                         <Play className="w-4 h-4" />
-                        <span>Main</span>
+                        <span>
+                          {videoRef.current && videoRef.current.currentTime > 0 && !videoRef.current.ended
+                            ? 'Sambung'
+                            : 'Main'}
+                        </span>
                       </button>
                       <button
                         type="button"
                         onClick={() => {
                           videoRef.current?.pause();
-                          setIsPlaying(false);
                         }}
                         disabled={!isPlaying}
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 disabled:bg-slate-200 disabled:text-slate-500 text-white text-xs font-bold cursor-pointer min-h-[40px]"
@@ -733,11 +761,13 @@ export const Phase2Hub: React.FC<Phase2HubProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (!videoRef.current) return;
-                          videoRef.current.currentTime = 0;
+                          const el = videoRef.current;
+                          if (!el) return;
+                          el.currentTime = 0;
+                          el.volume = Math.max(0, Math.min(1, volume / 100));
+                          el.muted = isMuted || volume === 0;
                           setTriggeredAutoCheckpoints([]);
-                          videoRef.current.play().catch(() => {});
-                          setIsPlaying(true);
+                          el.play().catch(() => setIsPlaying(false));
                         }}
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-bold cursor-pointer min-h-[40px]"
                       >
@@ -758,7 +788,7 @@ export const Phase2Hub: React.FC<Phase2HubProps> = ({
                           className="cursor-pointer"
                           aria-label="Tukar suara video"
                         >
-                          {isMuted ? <VolumeX className="w-4 h-4 text-red-600" /> : <Volume2 className="w-4 h-4 text-sky-600" />}
+                          {isMuted || volume === 0 ? <VolumeX className="w-4 h-4 text-red-600" /> : <Volume2 className="w-4 h-4 text-sky-600" />}
                         </button>
                         <input
                           type="range"

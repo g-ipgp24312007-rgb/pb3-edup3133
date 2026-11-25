@@ -239,7 +239,7 @@ export function isSpeechSupported(): boolean {
   return typeof window !== 'undefined';
 }
 
-function hasBrowserSpeechApi(): boolean {
+export function hasBrowserSpeechApi(): boolean {
   return (
     typeof window !== 'undefined' &&
     'speechSynthesis' in window &&
@@ -392,6 +392,18 @@ async function fetchNaturalMalayWav(speechText: string): Promise<ArrayBuffer | n
   return promise;
 }
 
+export function getCachedMalaySpeechWavBuffer(text: string): ArrayBuffer | null {
+  const speechText = normalizeMalayForSpeech(text);
+  if (!speechText) return null;
+  return getCachedClientWav(speechText) ?? null;
+}
+
+export async function fetchMalaySpeechWavBuffer(text: string): Promise<ArrayBuffer | null> {
+  const speechText = normalizeMalayForSpeech(text);
+  if (!speechText) return null;
+  return fetchNaturalMalayWav(speechText);
+}
+
 export function prefetchMalaySpeech(text: string): void {
   if (typeof window === 'undefined') return;
   const speechText = normalizeMalayForSpeech(text);
@@ -417,7 +429,7 @@ function scoreVoiceQuality(voice: SpeechSynthesisVoice): number {
   return score;
 }
 
-function selectStandardMalayVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
+export function selectStandardMalayVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
   if (!voices || voices.length === 0) return undefined;
 
   let bestVoice: SpeechSynthesisVoice | undefined;
