@@ -1,0 +1,6 @@
+{
+  "name": "Pokémon Hygiene Adventure",
+  "description": "Objek Pembelajaran Digital (OPD) interaktif Bahasa Melayu Tahun 2 — Fasa 1: Set Induksi dan Pengenalan bertemakan Pokémon Adventure.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
