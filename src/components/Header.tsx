@@ -16,6 +16,7 @@ const NAV_ITEMS: { id: AppSection; label: string; matchSections?: AppSection[] }
   { id: 'map', label: 'Peta Misi' },
   { id: 'assessment', label: 'Pentaksiran' },
   { id: 'phase5', label: 'Sijil' },
+  { id: 'teacher-guide', label: 'Panduan Guru' },
 ];
 
 export const Header: React.FC<HeaderProps> = ({
@@ -65,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Zone 2: Clean Single-Line Nav Links */}
-        <nav className="hidden md:flex items-center gap-5 lg:gap-6" aria-label="Menu utama">
+        <nav className="hidden md:flex items-center gap-4 lg:gap-5" aria-label="Menu utama">
           {NAV_ITEMS.map((item) => {
             const isActive =
               activeSection === item.id ||

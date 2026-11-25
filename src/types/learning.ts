@@ -7,6 +7,7 @@ export type AppSection =
   | 'phase4'
   | 'phase5'
   | 'assessment'
+  | 'teacher-guide'
   | 'completion';
 
 export type PhaseNumber = 1 | 2 | 3 | 4 | 5;

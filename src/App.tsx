@@ -9,6 +9,7 @@ import { Phase2Hub } from './components/phase2/Phase2Hub';
 import { Phase3Hub } from './components/phase3/Phase3Hub';
 import { Phase4Hub } from './components/phase4/Phase4Hub';
 import { Phase5Hub } from './components/phase5/Phase5Hub';
+import { TeacherGuide } from './components/TeacherGuide';
 import { PICTURE_CARDS } from './data/phase1Data';
 import { useOpdProgress } from './hooks/useOpdProgress';
 import { AppSection, MissionId, PhaseNumber } from './types/learning';
@@ -307,6 +308,13 @@ export default function App() {
             checkedMethodIds={state.phase1.formativeCheckedIds}
             onToggleChecked={toggleFormativeCheck}
             onGoToMission={() => handleNavigate('mission')}
+          />
+        )}
+
+        {activeSection === 'teacher-guide' && (
+          <TeacherGuide
+            onGoToMission={() => handleNavigate('mission')}
+            onGoToAssessment={() => handleNavigate('assessment')}
           />
         )}
 
